@@ -74,49 +74,130 @@ int same_image(image a, image b, float eps)
 {
     int i;
     if(a.w != b.w || a.h != b.h || a.c != b.c) {
-        printf("Expected %d x %d x %d image, got %d x %d x %d\n", b.w, b.h, b.c, a.w, a.h, a.c);
+        printf("    Expected %d x %d x %d image, got %d x %d x %d\n", b.w, b.h, b.c, a.w, a.h, a.c);
         return 0;
     }
     for(i = 0; i < a.w*a.h*a.c; ++i){
+        int x = i % a.w;
+        int y = (i / a.w) % a.h;
+        int z = (i / (a.w * a.h));
         float thresh = (fabs(b.data[i]) + fabs(a.data[i])) * eps / 2;
         if (thresh > eps) eps = thresh;
         if(!within_eps(a.data[i], b.data[i], eps)) 
         {
-            printf("The value should be %f, but it is %f! \n", b.data[i], a.data[i]);
+            printf("    Index %d, Pixel (%d, %d, %d) should be %f, but it is %f! \n", i, x, y, z, b.data[i], a.data[i]);
             return 0;
         }
     }
     return 1;
 }
 
-void test_get_pixel(){
-    image im = load_image("data/dots.png");
-    // Test within image
-    TEST(within_eps(0, get_pixel(im, 0,0,0), EPS));
-    TEST(within_eps(1, get_pixel(im, 1,0,1), EPS));
-    TEST(within_eps(0, get_pixel(im, 2,0,1), EPS));
+void make_hw0_test()
+{
+    image dots = make_image(4, 2, 3);
+    set_pixel(dots, 0, 0, 0, 0/255.);
+    set_pixel(dots, 0, 0, 1, 1/255.);
+    set_pixel(dots, 0, 0, 2, 2/255.);
+    
+    set_pixel(dots, 1, 0, 0, 255/255.);
+    set_pixel(dots, 1, 0, 1, 3/255.);
+    set_pixel(dots, 1, 0, 2, 4/255.);
+    
+    set_pixel(dots, 2, 0, 0, 5/255.);
+    set_pixel(dots, 2, 0, 1, 254/255.);
+    set_pixel(dots, 2, 0, 2, 6/255.);
+    
+    set_pixel(dots, 3, 0, 0, 7/255.);
+    set_pixel(dots, 3, 0, 1, 8/255.);
+    set_pixel(dots, 3, 0, 2, 253/255.);
 
-    // Test padding
-    TEST(within_eps(1, get_pixel(im, 0,3,1), EPS));
-    TEST(within_eps(1, get_pixel(im, 7,8,0), EPS));
-    TEST(within_eps(0, get_pixel(im, 7,8,1), EPS));
-    TEST(within_eps(1, get_pixel(im, 7,8,2), EPS));
+    set_pixel(dots, 0, 1, 0, 252/255.);
+    set_pixel(dots, 0, 1, 1, 251/255.);
+    set_pixel(dots, 0, 1, 2, 250/255.);
+    
+    set_pixel(dots, 1, 1, 0, 9/255.);
+    set_pixel(dots, 1, 1, 1, 249/255.);
+    set_pixel(dots, 1, 1, 2, 248/255.);
+    
+    set_pixel(dots, 2, 1, 0, 247/255.);
+    set_pixel(dots, 2, 1, 1, 10/255.);
+    set_pixel(dots, 2, 1, 2, 246/255.);
+    
+    set_pixel(dots, 3, 1, 0, 245/255.);
+    set_pixel(dots, 3, 1, 1, 244/255.);
+    set_pixel(dots, 3, 1, 2, 11/255.);
+    save_png(dots, "data/dotz");
+}
+
+void test_get_pixel(){
+    image im = load_image("data/dotz.png");
+    // Within image
+    {
+        // Top left
+        TEST(within_eps(0,      get_pixel(im, 0,0,0), EPS));
+        TEST(within_eps(1./255, get_pixel(im, 0,0,1), EPS));
+        TEST(within_eps(2./255, get_pixel(im, 0,0,2), EPS));
+
+        TEST(within_eps(255./255, get_pixel(im, 1,0,0), EPS));
+        TEST(within_eps(3./255, get_pixel(im, 1,0,1), EPS));
+        TEST(within_eps(4./255, get_pixel(im, 1,0,2), EPS));
+
+        // Bottom right
+        TEST(within_eps(247./255, get_pixel(im, 2,1,0), EPS));
+        TEST(within_eps(10./255, get_pixel(im, 2,1,1), EPS));
+        TEST(within_eps(246./255, get_pixel(im, 2,1,2), EPS));
+
+        TEST(within_eps(245./255, get_pixel(im, 3,1,0), EPS));
+        TEST(within_eps(244./255, get_pixel(im, 3,1,1), EPS));
+        TEST(within_eps(11./255, get_pixel(im, 3,1,2), EPS));
+    }
+    // Outside image
+    {
+        TEST(within_eps(1./255, get_pixel(im, -1,-1,1), EPS));
+        TEST(within_eps(4./255, get_pixel(im, 1,-1,2), EPS));
+        TEST(within_eps(7./255, get_pixel(im, 4,0,0), EPS));
+
+        TEST(within_eps(11./255, get_pixel(im, 4,2,2), EPS));
+        TEST(within_eps(246./255, get_pixel(im, 2,2,2), EPS));
+    }
+
     free_image(im);
 }
 
 void test_set_pixel(){
-    image gt = load_image("data/dots.png");
+    image gt = load_image("data/dotz.png");
     image d = make_image(4,2,3);
-    set_pixel(d, 0,0,0,0); set_pixel(d, 0,0,1,0); set_pixel(d, 0,0,2,0); 
-    set_pixel(d, 1,0,0,1); set_pixel(d, 1,0,1,1); set_pixel(d, 1,0,2,1); 
-    set_pixel(d, 2,0,0,1); set_pixel(d, 2,0,1,0); set_pixel(d, 2,0,2,0); 
-    set_pixel(d, 3,0,0,1); set_pixel(d, 3,0,1,1); set_pixel(d, 3,0,2,0); 
+    set_pixel(d, 0, 0, 0, 0/255.);
+    set_pixel(d, 0, 0, 1, 1/255.);
+    set_pixel(d, 0, 0, 2, 2/255.);
+    
+    set_pixel(d, 1, 0, 0, 255/255.);
+    set_pixel(d, 1, 0, 1, 3/255.);
+    set_pixel(d, 1, 0, 2, 4/255.);
+    
+    set_pixel(d, 2, 0, 0, 5/255.);
+    set_pixel(d, 2, 0, 1, 254/255.);
+    set_pixel(d, 2, 0, 2, 6/255.);
+    
+    set_pixel(d, 3, 0, 0, 7/255.);
+    set_pixel(d, 3, 0, 1, 8/255.);
+    set_pixel(d, 3, 0, 2, 253/255.);
 
-    set_pixel(d, 0,1,0,0); set_pixel(d, 0,1,1,1); set_pixel(d, 0,1,2,0); 
-    set_pixel(d, 1,1,0,0); set_pixel(d, 1,1,1,1); set_pixel(d, 1,1,2,1); 
-    set_pixel(d, 2,1,0,0); set_pixel(d, 2,1,1,0); set_pixel(d, 2,1,2,1); 
-    set_pixel(d, 3,1,0,1); set_pixel(d, 3,1,1,0); set_pixel(d, 3,1,2,1); 
-
+    set_pixel(d, 0, 1, 0, 252/255.);
+    set_pixel(d, 0, 1, 1, 251/255.);
+    set_pixel(d, 0, 1, 2, 250/255.);
+    
+    set_pixel(d, 1, 1, 0, 9/255.);
+    set_pixel(d, 1, 1, 1, 249/255.);
+    set_pixel(d, 1, 1, 2, 248/255.);
+    
+    set_pixel(d, 2, 1, 0, 247/255.);
+    set_pixel(d, 2, 1, 1, 10/255.);
+    set_pixel(d, 2, 1, 2, 246/255.);
+    
+    set_pixel(d, 3, 1, 0, 245/255.);
+    set_pixel(d, 3, 1, 1, 244/255.);
+    set_pixel(d, 3, 1, 2, 11/255.);
     // Test images are same
     TEST(same_image(d, gt, EPS));
     free_image(gt);
@@ -216,6 +297,7 @@ void test_bl_interpolate()
     TEST(within_eps(bilinear_interpolate(im, -.5, .5, 1)   , 0.237255, EPS));
     TEST(within_eps(bilinear_interpolate(im, .499, .5, 2)  , 0.206861, EPS));
     TEST(within_eps(bilinear_interpolate(im, 14.2, 15.9, 1), 0.678588, EPS));
+    free_image(im);
 }
 
 
@@ -282,7 +364,7 @@ void test_highpass_filter(){
     image blur = convolve_image(im, f, 0);
     clamp_image(blur);
 
-    
+
     image gt = load_image("figs/dog-highpass.png");
     TEST(same_image(blur, gt, EPS));
     free_image(im);
@@ -297,7 +379,7 @@ void test_emboss_filter(){
     image blur = convolve_image(im, f, 1);
     clamp_image(blur);
 
-    
+
     image gt = load_image("figs/dog-emboss.png");
     TEST(same_image(blur, gt, EPS));
     free_image(im);
@@ -422,8 +504,8 @@ void test_sobel(){
     TEST(gt_mag.h == mag.h && gt_theta.h == theta.h);
     TEST(gt_mag.c == mag.c && gt_theta.c == theta.c);
     if( gt_mag.w != mag.w || gt_theta.w != theta.w || 
-        gt_mag.h != mag.h || gt_theta.h != theta.h || 
-        gt_mag.c != mag.c || gt_theta.c != theta.c ) return;
+            gt_mag.h != mag.h || gt_theta.h != theta.h || 
+            gt_mag.c != mag.c || gt_theta.c != theta.c ) return;
     int i;
     for(i = 0; i < gt_mag.w*gt_mag.h; ++i){
         if(within_eps(gt_mag.data[i], 0, EPS)){
